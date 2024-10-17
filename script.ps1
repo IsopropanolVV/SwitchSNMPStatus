@@ -71,7 +71,11 @@ $stpPortStateResult -split "`n" | ForEach-Object {
 
 # Ergebnisse kombinieren und ausgeben
 Write-Host "Port-Status-Ergebnisse (Formatiert):"
-foreach ($port in $adminStatusDict.Keys) {
+
+# Portnummern sortieren
+$sortedPorts = $adminStatusDict.Keys | Sort-Object { [int]$_ }
+
+foreach ($port in $sortedPorts) {
     $adminStatusCode = $adminStatusDict[$port]
     $operStatusCode = $operStatusDict[$port]
     $stpStateCode = $stpPortStateDict[$port]
