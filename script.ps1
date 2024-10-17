@@ -69,11 +69,10 @@ $stpPortStateResult -split "`n" | ForEach-Object {
     }
 }
 
+# ... (gleicher Anfang wie oben)
+
 # Ergebnisse kombinieren und ausgeben
 Write-Host "Port-Status-Ergebnisse (Formatiert):"
-
-# Portnummern sortieren
-$sortedPorts = $adminStatusDict.Keys | Sort-Object { [int]$_ }
 
 foreach ($port in $sortedPorts) {
     $adminStatusCode = $adminStatusDict[$port]
@@ -85,6 +84,7 @@ foreach ($port in $sortedPorts) {
         1 { "up" }
         2 { "down" }
         3 { "testing" }
+        4 { "err-disable" } # Angepasst
         default { "unknown" }
     }
 
@@ -96,6 +96,7 @@ foreach ($port in $sortedPorts) {
         5 { "dormant" }
         6 { "notPresent" }
         7 { "lowerLayerDown" }
+        8 { "err-disable" } # Angepasst
         default { "unknown" }
     }
 
@@ -105,7 +106,8 @@ foreach ($port in $sortedPorts) {
         3 { "listening" }
         4 { "learning" }
         5 { "forwarding" }
-        6 { "broken" }
+        6 { "err-disable" } # Angepasst
+        7 { "unknown" }
         default { "unknown" }
     }
 
