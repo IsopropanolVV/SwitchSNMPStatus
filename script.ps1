@@ -7,12 +7,15 @@ $SwitchIP = "10.0.0.85"
 # SNMP Community
 $Community = "public"
 
-# SNMP OIDs für den Admin- und Oper-Status (MIB-2)
+# SNMP OIDs
 $OID_ifAdminStatus = "1.3.6.1.2.1.2.2.1.7"
 $EndOID_ifAdminStatus = "1.3.6.1.2.1.2.2.1.8" # Ende nach ifAdminStatus
 
 $OID_ifOperStatus = "1.3.6.1.2.1.2.2.1.8"
 $EndOID_ifOperStatus = "1.3.6.1.2.1.2.2.1.9" # Ende nach ifOperStatus
+
+$OID_dot1dStpPortState = "1.3.6.1.2.1.17.2.15.1.3"
+$EndOID_dot1dStpPortState = "1.3.6.1.2.1.17.2.15.1.4" # Ende nach dot1dStpPortState
 
 # Funktion zur Abfrage von SNMP-Daten
 function Get-SNMPData {
@@ -35,6 +38,9 @@ $adminStatusResult = Get-SNMPData -SwitchIP $SwitchIP -Community $Community -OID
 # Abfrage des Oper-Status
 $operStatusResult = Get-SNMPData -SwitchIP $SwitchIP -Community $Community -OID $OID_ifOperStatus -EndOID $EndOID_ifOperStatus
 
+# Abfrage des STP-Portzustands
+$stpPortStateResult = Get-SNMPData -SwitchIP $SwitchIP -Community $Community -OID $OID_dot1dStpPortState -EndOID $EndOID_dot1dStpPortState
+
 # Ergebnisse parsen und in Dictionaries speichern
 $adminStatusDict = @{}
 $adminStatusResult -split "`n" | ForEach-Object {
@@ -54,11 +60,21 @@ $operStatusResult -split "`n" | ForEach-Object {
     }
 }
 
+$stpPortStateDict = @{}
+$stpPortStateResult -split "`n" | ForEach-Object {
+    if ($_ -match "OID=.*1\.3\.6\.1\.2\.1\.17\.2\.15\.1\.3\.(\d+),.*Value=(\d+)") {
+        $port = $matches[1]
+        $state = $matches[2]
+        $stpPortStateDict[$port] = $state
+    }
+}
+
 # Ergebnisse kombinieren und ausgeben
 Write-Host "Port-Status-Ergebnisse (Formatiert):"
 foreach ($port in $adminStatusDict.Keys) {
     $adminStatusCode = $adminStatusDict[$port]
     $operStatusCode = $operStatusDict[$port]
+    $stpStateCode = $stpPortStateDict[$port]
 
     # Statuscodes zu Texten zuordnen
     $adminStatusText = switch ($adminStatusCode) {
@@ -79,5 +95,15 @@ foreach ($port in $adminStatusDict.Keys) {
         default { "unknown" }
     }
 
-    Write-Host "Port ${port}: AdminStatus=${adminStatusText}, OperStatus=${operStatusText}"
+    $stpStateText = switch ($stpStateCode) {
+        1 { "disabled" }
+        2 { "blocking" }
+        3 { "listening" }
+        4 { "learning" }
+        5 { "forwarding" }
+        6 { "broken" }
+        default { "unknown" }
+    }
+
+    Write-Host "Port ${port}: AdminStatus=${adminStatusText}, OperStatus=${operStatusText}, State=${stpStateText}"
 }
